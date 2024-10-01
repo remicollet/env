@@ -30,9 +30,6 @@
 
 ZEND_DECLARE_MODULE_GLOBALS(env)
 
-/* True global resources - no need for thread safety here */
-static int le_env;
-
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()

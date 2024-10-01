@@ -23,16 +23,17 @@ static void php_env_ini_parser_cb(zval *key, zval *value, zval *index, int callb
 }
 
 void php_env_module_init(HashTable *vars TSRMLS_DC) {
-	int ndir = 255;
-	uint32_t i;
-	unsigned char c;
 	struct zend_stat sb;
 	zend_file_handle fh = {0};
 
 	if (ENV_G(file) != NULL && strlen(ENV_G(file)) > 0 && VCWD_STAT(ENV_G(file), &sb) == 0) {
 		if (S_ISREG(sb.st_mode)) {
 			if ((fh.handle.fp = VCWD_FOPEN(ENV_G(file), "r"))) {
+#if PHP_VERSION_ID >= 80100
+				fh.filename = zend_string_init(ENV_G(file), strlen(ENV_G(file)), 0);
+#else
 				fh.filename = ENV_G(file);
+#endif
 				fh.type = ZEND_HANDLE_FP;
 
 				if (zend_parse_ini_file(&fh, 1, 0 /* ZEND_INI_SCANNER_NORMAL */,
@@ -43,6 +44,9 @@ void php_env_module_init(HashTable *vars TSRMLS_DC) {
 
 					ENV_G(parse_err) = 0;
 				}
+#if PHP_VERSION_ID >= 80100
+				zend_string_release(fh.filename);
+#endif
 			}
 		}
 	}
@@ -51,11 +55,11 @@ void php_env_module_init(HashTable *vars TSRMLS_DC) {
 void php_env_request_init(HashTable *vars TSRMLS_DC)
 {
 	zend_string *str;
-	uint   len;
 	ulong  idx;
 	zval *val;
 
 	ZEND_HASH_FOREACH_KEY_VAL(vars, idx, str, val) {
+		(void)idx;
 		if (str) {
 			setenv(ZSTR_VAL(str), Z_PTR_P(val), 1);
 		}
